@@ -1,5 +1,4 @@
-"""AI provider package re-exporting client, contexts, and schemas."""
-from src.ai.client import AIClient
+from src.ai.client import AIClient, _clean_gemini_schema
 from src.ai.context import estimate_tokens, repair_context, text_sources
 from src.ai.prompts import ANALYSIS_PROMPT, EDIT_PROMPT, FACTS_POLICY, REPAIR_PROMPT
 from src.ai.schemas import ANALYSIS_SCHEMA, EDIT_SCHEMA, REPAIR_SCHEMA, object_schema, validate_json
@@ -8,6 +7,7 @@ from src.models import EditResult
 
 __all__ = [
     "AIClient",
+    "_clean_gemini_schema",
     "ProviderError",
     "EditResult",
     "object_schema",
@@ -23,3 +23,4 @@ __all__ = [
     "REPAIR_PROMPT",
     "FACTS_POLICY",
 ]
+

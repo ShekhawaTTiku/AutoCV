@@ -35,13 +35,33 @@ def processing_status():
     if job.done.is_set():
         finish_job(job)
         st.rerun()
-    st.info("Cancellation requested; waiting for the active operation to stop…"
-            if job.cancelled.is_set() else job.stage)
+
+    is_cancelling = job.cancelled.is_set()
+    stage_text = "Cancellation requested; stopping active operation…" if is_cancelling else job.stage
     used, tokens, estimated = st.session_state.usage.snapshot()
-    st.caption(f"AI calls: {used} · Tokens: {tokens:,}" + (" (estimated)" if estimated else ""))
-    if st.button("Cancel request", key="cancel_" + job.id, disabled=job.cancelled.is_set()):
-        job.cancelled.set()
-        st.rerun()
+    est_tag = " (~est)" if estimated else ""
+
+    banner_col1, banner_col2 = st.columns([4, 1])
+    with banner_col1:
+        st.markdown(
+            f"""
+            <div class="processing-banner">
+                <span class="pulse-dot"></span>
+                <div>
+                    <div style="font-weight: 600; font-size: 0.9rem; color: #f0f4ff;">{stage_text}</div>
+                    <div style="font-size: 0.75rem; color: #8b95b0; margin-top: 2px;">
+                        AI calls: {used} · Tokens: {tokens:,}{est_tag}
+                    </div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with banner_col2:
+        st.markdown("<div style='padding-top: 6px;'></div>", unsafe_allow_html=True)
+        if st.button("Cancel request", key="cancel_" + job.id, disabled=is_cancelling, use_container_width=True):
+            job.cancelled.set()
+            st.rerun()
 
 
 def open_project(project, cfg):
@@ -83,7 +103,18 @@ def preview(snapshot: dict):
     """Render scrollable multi-page PDF preview with quick-jump pill buttons."""
     pdf_bytes = snapshot.get("pdf")
     if not pdf_bytes:
-        st.info("A PDF preview appears after successful compilation.")
+        st.markdown(
+            """
+            <div class="acv-card" style="text-align: center; padding: 4rem 2rem; margin-top: 0.5rem;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.7;">📄</div>
+                <div style="font-weight: 700; font-size: 1.05rem; color: #f0f4ff; margin-bottom: 0.35rem;">PDF Preview Pending</div>
+                <div style="color: #8b95b0; font-size: 0.85rem; max-width: 320px; margin: 0 auto; line-height: 1.4;">
+                    Your live multi-page document preview will appear here once LaTeX compiles.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         return
     if snapshot.get("fingerprint") != source_fingerprint(snapshot["project"]):
         st.error("This PDF no longer matches its source. Compile again before reviewing.")

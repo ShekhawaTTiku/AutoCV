@@ -22,12 +22,15 @@ class Settings:
     request_limit: int = 20
     upload_mb: int = 10
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-3.5-flash-lite"
+    gemini_model: str = "gemini-3.6-flash"
+    gemini_fallback_model: str = "gemini-3.8-flash"
     mistral_api_key: str = ""
-    mistral_model: str = "mistral-large-latest"
+    mistral_model: str = "mistral-small-2603"
     token_limit: int = 120000
     full_context_tokens: int = 12000
     max_output_tokens: int = 4096
+    overall_deadline: int = 120
+    max_retries: int = 2
 
 
 def load_settings(secrets: Mapping | None = None) -> Settings:
@@ -59,9 +62,13 @@ def load_settings(secrets: Mapping | None = None) -> Settings:
         compiler=compiler, compile_timeout=positive("COMPILE_TIMEOUT_SECONDS", 90),
         ai_timeout=positive("AI_TIMEOUT_SECONDS", 60),
         request_limit=positive("SESSION_REQUEST_LIMIT", 20), upload_mb=positive("MAX_UPLOAD_MB", 10),
-        gemini_api_key=value("GEMINI_API_KEY"), gemini_model=value("GEMINI_MODEL", "gemini-3.5-flash-lite"),
-        mistral_api_key=value("MISTRAL_API_KEY"), mistral_model=value("MISTRAL_MODEL", "mistral-large-latest"),
+        gemini_api_key=value("GEMINI_API_KEY"), gemini_model=value("GEMINI_MODEL", "gemini-3.6-flash"),
+        gemini_fallback_model=value("GEMINI_FALLBACK_MODEL", "gemini-3.8-flash"),
+        mistral_api_key=value("MISTRAL_API_KEY"), mistral_model=value("MISTRAL_MODEL", "mistral-small-2603"),
         token_limit=positive("SESSION_TOKEN_LIMIT", 120000),
         full_context_tokens=positive("FULL_CONTEXT_TOKENS", 12000),
         max_output_tokens=positive("MAX_OUTPUT_TOKENS", 4096),
+        overall_deadline=positive("AI_DEADLINE_SECONDS", 120),
+        max_retries=positive("MAX_RETRIES_PER_MODEL", 2),
     )
+

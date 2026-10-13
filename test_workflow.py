@@ -289,7 +289,7 @@ class ProviderTests(unittest.TestCase):
         self.assertIn("responseFormat", requests[0][1]["generationConfig"])
         self.assertIn("max_completion_tokens", requests[1][1])
         self.assertIn("max_tokens", requests[2][1])
-        self.assertEqual(requests[2][1]["model"], "mistral-large-latest")
+        self.assertEqual(requests[2][1]["model"], CFG.mistral_model)
         self.assertEqual(usage.snapshot(), (3, 170, False))
 
     def test_missing_key_and_budget_fail_before_http(self):

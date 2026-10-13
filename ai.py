@@ -13,6 +13,7 @@ from src.ai import (
     AIClient,
     EditResult,
     ProviderError,
+    _clean_gemini_schema,
     object_schema,
     repair_context,
     text_sources,
@@ -21,6 +22,7 @@ from src.ai import (
 
 __all__ = [
     "AIClient",
+    "_clean_gemini_schema",
     "ProviderError",
     "EditResult",
     "object_schema",
@@ -35,3 +37,4 @@ __all__ = [
     "REPAIR_PROMPT",
     "FACTS_POLICY",
 ]
+
