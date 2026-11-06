@@ -15,8 +15,7 @@ def page_count(pdf_bytes: bytes) -> int:
         return document.page_count
 
 
-def render_page(pdf_bytes: bytes, page_index: int) -> bytes:
-    """Render a single PDF page at optimal resolution and return PNG bytes."""
+def _render_page_raw(pdf_bytes: bytes, page_index: int) -> bytes:
     with _pdf_lock, pymupdf.open(stream=pdf_bytes, filetype="pdf") as document:
         page = document[page_index]
         width, height = page.rect.width, page.rect.height
@@ -24,3 +23,23 @@ def render_page(pdf_bytes: bytes, page_index: int) -> bytes:
             raise ValueError("The PDF page has invalid dimensions.")
         scale = min(1200 / width, 1800 / height, 2)
         return page.get_pixmap(matrix=pymupdf.Matrix(scale, scale), alpha=False).tobytes("png")
+
+
+try:
+    import streamlit as st
+
+    @st.cache_data(max_entries=64, show_spinner=False)
+    def _cached_render(pdf_bytes: bytes, page_index: int) -> bytes:
+        return _render_page_raw(pdf_bytes, page_index)
+except Exception:
+    _cached_render = None
+
+
+def render_page(pdf_bytes: bytes, page_index: int) -> bytes:
+    """Render a single PDF page at optimal resolution and return PNG bytes (cached)."""
+    if _cached_render is not None:
+        try:
+            return _cached_render(pdf_bytes, page_index)
+        except Exception:
+            pass
+    return _render_page_raw(pdf_bytes, page_index)

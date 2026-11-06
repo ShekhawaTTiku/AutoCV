@@ -33,6 +33,46 @@ class Settings:
     max_retries: int = 2
 
 
+def _resolve_compiler(preferred: str = "") -> str:
+    """Find local or system LaTeX compiler; auto-download standalone Tectonic on Linux if missing."""
+    if preferred and preferred.lower() not in {"", "auto"}:
+        return preferred
+    binary = ROOT / "tools" / ("tectonic.exe" if os.name == "nt" else "tectonic")
+    if binary.exists():
+        return str(binary)
+    system_compiler = next(
+        (path for name in ("tectonic", "pdflatex", "xelatex")
+         if (path := shutil.which(name))), ""
+    )
+    if system_compiler:
+        return system_compiler
+
+    # Auto-provision portable Tectonic on Linux (e.g. Streamlit Community Cloud)
+    if os.name != "nt":
+        try:
+            import io, platform, tarfile, urllib.request
+            tools_dir = ROOT / "tools"
+            tools_dir.mkdir(parents=True, exist_ok=True)
+            machine = platform.machine().lower()
+            pattern = "aarch64-unknown-linux-musl.tar.gz" if ("arm" in machine or "aarch64" in machine) else "x86_64-unknown-linux-musl.tar.gz"
+            url = f"https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%400.15.0/tectonic-0.15.0-{pattern}"
+            req = urllib.request.Request(url, headers={"User-Agent": "AutoCV-CloudSetup"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                content = resp.read()
+            with tarfile.open(fileobj=io.BytesIO(content), mode="r:gz") as tf:
+                for member in tf.getmembers():
+                    if member.name.endswith("tectonic") and member.isfile():
+                        extracted = tf.extractfile(member)
+                        if extracted:
+                            target = tools_dir / "tectonic"
+                            target.write_bytes(extracted.read())
+                            target.chmod(0o755)
+                            return str(target)
+        except Exception:
+            pass
+    return ""
+
+
 def load_settings(secrets: Mapping | None = None) -> Settings:
     """Read this project's .env file; hosted Streamlit secrets can override it."""
     local = dotenv_values(ROOT / ".env")
@@ -50,12 +90,7 @@ def load_settings(secrets: Mapping | None = None) -> Settings:
             raise ValueError(f"{name} must be a positive whole number.")
         return number
 
-    compiler = value("LATEX_COMPILER")
-    if compiler.lower() in {"", "auto"}:
-        binary = ROOT / "tools" / ("tectonic.exe" if os.name == "nt" else "tectonic")
-        compiler = str(binary) if binary.exists() else next(
-            (path for name in ("tectonic", "pdflatex", "xelatex")
-             if (path := shutil.which(name))), "")
+    compiler = _resolve_compiler(value("LATEX_COMPILER"))
 
     return Settings(
         api_key=value("GROQ_API_KEY"), model=value("GROQ_MODEL", "openai/gpt-oss-120b"),
